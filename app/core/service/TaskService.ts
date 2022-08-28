@@ -9,6 +9,7 @@ import { AbstractService } from '../../common/AbstractService';
 import { TaskRepository } from '../../repository/TaskRepository';
 import { Task } from '../entity/Task';
 import { QueueAdapter } from '../../common/typing';
+import { TASK_TIMEOUT } from 'app/common/constants';
 
 @ContextProto({
   accessLevel: AccessLevel.PUBLIC,
@@ -90,7 +91,7 @@ export class TaskService extends AbstractService {
 
   public async retryExecuteTimeoutTasks() {
     // try processing timeout tasks in 10 mins
-    const tasks = await this.taskRepository.findTimeoutTasks(TaskState.Processing, 60000 * 10);
+    const tasks = await this.taskRepository.findTimeoutTasks(TaskState.Processing, TASK_TIMEOUT);
     for (const task of tasks) {
       // ignore ChangesStream task, it won't timeout
       if (task.attempts >= 3 && task.type !== TaskType.ChangesStream) {

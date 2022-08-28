@@ -20,6 +20,7 @@ import { AbstractChangeStream, ChangesStreamChange } from '../../common/adapter/
 import { getScopeAndName } from '../../common/PackageUtil';
 import { ScopeManagerService } from './ScopeManagerService';
 import { PackageRepository } from '../../repository/PackageRepository';
+import { TASK_TIMEOUT } from '../../common/constants';
 
 @ContextProto({
   accessLevel: AccessLevel.PUBLIC,
@@ -55,10 +56,12 @@ export class ChangesStreamService extends AbstractService {
     return await this.taskService.findExecuteTask(TaskType.ChangesStream) as ChangesStreamTask;
   }
 
-  public async executeTask(task: ChangesStreamTask) {
+  public async executeTask(task: ChangesStreamTask, timeout = TASK_TIMEOUT) {
     task.authorIp = os.hostname();
     task.authorId = `pid_${process.pid}`;
     await this.taskRepository.saveTask(task);
+    const start = performance.now();
+    let isTimeout = false;
 
     // 初始化 changeStream 任务
     // since 默认从 1 开始
@@ -68,7 +71,7 @@ export class ChangesStreamService extends AbstractService {
         since = await this.getInitialSince(task);
       }
       // allow disable changesStream dynamic
-      while (since && this.config.cnpmcore.enableChangesStream) {
+      while (since && this.config.cnpmcore.enableChangesStream && !isTimeout) {
         const { lastSince, taskCount } = await this.executeSync(since, task);
         this.logger.warn('[ChangesStreamService.executeTask:changes] since: %s => %s, %d new tasks, taskId: %s, updatedAt: %j',
           since, lastSince, taskCount, task.taskId, task.updatedAt);
@@ -77,6 +80,10 @@ export class ChangesStreamService extends AbstractService {
           break;
         }
         await setTimeout(this.config.cnpmcore.checkChangesStreamInterval);
+        isTimeout = performance.now() - start < timeout;
+        if (isTimeout) {
+          this.logger.info('[ChangesStreamService.executeTask:timeout] exit now');
+        }
       }
     } catch (err) {
       this.logger.error('[ChangesStreamService.executeTask:error] %s, exit now', err);

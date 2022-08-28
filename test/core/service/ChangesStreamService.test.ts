@@ -183,4 +183,23 @@ describe('test/core/service/ChangesStreamService.test.ts', () => {
     });
   });
 
+  describe('executeTask()', () => {
+    it('should handle timeout', async () => {
+      mock(ctx.httpclient, 'request', async () => {
+        return {
+          res: Readable.from(`
+            {"seq":2,"id":"backbone.websql.deferred","changes":[{"rev":"4-f5150b238ab62cd890211fb57fc9eca5"}],"deleted":true},
+            {"seq":3,"id":"backbone2.websql.deferred","changes":[{"rev":"4-f6150b238ab62cd890211fb57fc9eca5"}],"deleted":true},
+            `),
+        };
+      });
+
+      mock(app.config.cnpmcore, 'syncMode', 'all');
+      mock(app.config.cnpmcore, 'enableChangesStream', true);
+
+      await changesStreamService.executeTask(task, 1000);
+      app.expectLog('ChangesStreamService.executeTask:timeout');
+    })
+  });
+
 });
