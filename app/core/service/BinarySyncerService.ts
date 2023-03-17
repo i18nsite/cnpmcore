@@ -152,6 +152,29 @@ export class BinarySyncerService extends AbstractService {
     }
   }
 
+  public async listRemoteRootItems(binaryName: BinaryName) {
+    // 1. get all binaryList
+    const binaryConfig = binaries[binaryName];
+    const binaryAdapter = await this.eggObjectFactory.getEggObject(AbstractBinary, binaryConfig.type);
+    await binaryAdapter.init(binaryName);
+
+    return binaryAdapter.fetch('/', binaryName);
+
+  }
+
+  public async listRemoteItems(binaryName: BinaryName, useApiAdapter = false) {
+    const binaryConfig = binaries[binaryName];
+    let binaryAdapter: AbstractBinary;
+    if (useApiAdapter) {
+      binaryAdapter = await this.eggObjectFactory.getEggObject(AbstractBinary, BinaryType.Api);
+    } else {
+      binaryAdapter = await this.eggObjectFactory.getEggObject(AbstractBinary, binaryConfig.type);
+    }
+    await binaryAdapter.init(binaryName);
+    const res = await binaryAdapter.fetch('/', binaryName);
+    return res?.items || [];
+  }
+
   private async syncDir(binaryAdapter: AbstractBinary, task: Task, dir: string, parentIndex = '') {
     const binaryName = task.targetName as BinaryName;
     const result = await binaryAdapter.fetch(dir, binaryName);

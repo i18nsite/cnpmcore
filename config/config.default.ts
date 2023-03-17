@@ -11,10 +11,10 @@ export default (appInfo: EggAppConfig) => {
   config.cnpmcore = {
     name: 'cnpm',
     hooksLimit: 20,
-    sourceRegistry: 'https://registry.npmjs.org',
+    sourceRegistry: 'https://registry.npmmirror.com',
     // upstream registry is base on `cnpmcore` or not
     // if your upstream is official npm registry, please turn it off
-    sourceRegistryIsCNpm: false,
+    sourceRegistryIsCNpm: true,
     syncUpstreamFirst: false,
     // 3 mins
     sourceRegistrySyncTimeout: 180000,

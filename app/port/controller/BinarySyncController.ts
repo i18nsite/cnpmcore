@@ -106,6 +106,52 @@ export class BinarySyncController extends AbstractController {
   }
 
   @HTTPMethod({
+    path: '/-/clean/:binaryName',
+    method: HTTPMethodEnum.GET,
+  })
+  // 清理 Binary 脏数据
+  // 只清理根目录
+  async cleanBinary(@Context() ctx: EggContext, @HTTPParam() binaryName: BinaryName) {
+    // check binaryName valid
+    try {
+      ctx.tValidate(BinaryNameRule, binaryName);
+    } catch {
+      throw new NotFoundError(`Binary "${binaryName}" not found`);
+    }
+
+    let res = '';
+
+
+    const itemsInMirror = await this.binarySyncerService.listRemoteItems(binaryName, true);
+    const itemsInRemote = await this.binarySyncerService.listRemoteItems(binaryName, false);
+
+    const itemsNeedDelete = itemsInMirror.filter(item => {
+      return !itemsInRemote.find(remoteItem => remoteItem.name === item.name);
+    });
+
+    if (itemsNeedDelete.length > 0 && itemsInRemote.length > 0) {
+      res += `-- Clean ${binaryName}: ${itemsNeedDelete.map(item => item.name).join(',')} --\n`
+      res += `DELETE FROM BINARIES WHERE CATEGORY = '${binaryName}' AND
+      (
+        (PARENT = '/' AND NAME IN (${itemsNeedDelete.map(item => `'${item.name}'`).join(',')}))
+      )
+      AND gmt_create > '2023-01-21';
+      `;
+      res += `DELETE FROM BINARIES WHERE CATEGORY = '${binaryName}' AND (
+        ${itemsNeedDelete.map(item => `PARENT LIKE '/${item.name}%'`).join(' OR ')}
+      )
+      AND gmt_create > '2023-01-21';
+      `;
+      res += '\n';
+    }
+
+    return res;
+
+
+
+  }
+
+  @HTTPMethod({
     path: '/-/binary/:binaryName(@[^/]{1,220}\/[^/]{1,220}|[^@/]{1,220})',
     method: HTTPMethodEnum.GET,
   })
