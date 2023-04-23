@@ -7,7 +7,6 @@ interface PackageData extends EntityData {
   scope: string;
   name: string;
   packageId: string;
-  isPrivate: boolean;
   description: string;
   abbreviatedsDist?: Dist;
   manifestsDist?: Dist;
@@ -32,7 +31,6 @@ export class Package extends Entity {
   readonly scope: string;
   readonly name: string;
   readonly packageId: string;
-  readonly isPrivate: boolean;
   // allow to update
   description: string;
   abbreviatedsDist?: Dist;
@@ -44,7 +42,6 @@ export class Package extends Entity {
     this.scope = data.scope;
     this.name = data.name;
     this.packageId = data.packageId;
-    this.isPrivate = data.isPrivate;
     this.description = data.description;
     this.abbreviatedsDist = data.abbreviatedsDist;
     this.manifestsDist = data.manifestsDist;

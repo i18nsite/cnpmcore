@@ -187,8 +187,7 @@ export class SavePackageVersionController extends AbstractController {
         content: tarballBytes,
       },
       tag: tagWithVersion.tag,
-      registryId: registry.registryId,
-      isPrivate: true,
+      registry,
     }, user);
 
     this.logger.info('[package:version:add] %s@%s, packageVersionId: %s, tag: %s, userId: %s',

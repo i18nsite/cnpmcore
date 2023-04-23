@@ -32,7 +32,7 @@ import { Registry } from '../entity/Registry';
 import { BadRequestError } from 'egg-errors';
 import { ScopeManagerService } from './ScopeManagerService';
 import { EventCorkAdvice } from './EventCorkerAdvice';
-import { PresetRegistryName, SyncDeleteMode } from '../../common/constants';
+import { SyncDeleteMode } from '../../common/constants';
 
 type syncDeletePkgOptions = {
   task: Task,
@@ -310,7 +310,7 @@ export class PackageSyncerService extends AbstractService {
   // 1. 其次从 task.data.registryId (创建单包同步任务时传入)
   // 2. 接着根据 scope 进行计算 (作为子包依赖同步时候，无 registryId)
   // 3. 最后返回 default registryId (可能 default registry 也不存在)
-  public async initSpecRegistry(task: Task, pkg: Package | null = null, scope?: string): Promise<Registry | null> {
+  public async initSpecRegistry(task: Task, pkg: Package | null = null, scope?: string): Promise<Registry> {
     const registryId = pkg?.registryId || (task.data as SyncPackageTaskOptions).registryId;
     let targetHost: string = this.config.cnpmcore.sourceRegistry;
     let registry: Registry | null = null;
@@ -328,7 +328,7 @@ export class PackageSyncerService extends AbstractService {
 
     // 采用默认的 registry
     if (!registry) {
-      registry = await this.registryManagerService.findByRegistryName(PresetRegistryName.default);
+      registry = await this.registryManagerService.ensureDefaultRegistry();
     }
 
     // 更新 targetHost 地址
@@ -337,7 +337,7 @@ export class PackageSyncerService extends AbstractService {
       targetHost = registry.host;
     }
     this.npmRegistry.setRegistryHost(targetHost);
-    return registry;
+    return registry!;
   }
 
   // 由于 cnpmcore 将 version 和 tag 作为两个独立的 changes 事件分发
@@ -635,18 +635,17 @@ export class PackageSyncerService extends AbstractService {
         pkg = await this.packageRepository.findPackage(scope, name);
       }
 
-      const publishCmd = {
+      const publishCmd: Parameters<typeof PackageManagerService.prototype.publish>[0] = {
         scope,
         name,
         version,
         description,
         packageJson: item,
         readme,
-        registryId: registry?.registryId,
+        registry,
         dist: {
           localFile,
         },
-        isPrivate: false,
         publishTime,
         skipRefreshPackageManifests: true,
       };

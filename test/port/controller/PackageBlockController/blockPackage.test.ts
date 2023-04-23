@@ -84,18 +84,6 @@ describe('test/port/controller/PackageBlockController/blockPackage.test.ts', () 
       assert(res.body.error.includes('only for tests again (operator: cnpmcore_admin/'));
     });
 
-    it('should 403 block private package', async () => {
-      const { pkg } = await TestUtil.createPackage({ isPrivate: true });
-      const res = await app.httpRequest()
-        .put(`/-/package/${pkg.name}/blocks`)
-        .set('authorization', adminUser.authorization)
-        .send({
-          reason: 'only for tests',
-        });
-      assert(res.status === 403);
-      assert(res.body.error === '[FORBIDDEN] Can\'t block private package "@cnpm/testmodule"');
-    });
-
     it('should 403 when user is not admin', async () => {
       const user = await TestUtil.createUser();
       const { pkg } = await TestUtil.createPackage({ isPrivate: true });

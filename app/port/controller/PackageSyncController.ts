@@ -18,7 +18,7 @@ import { PackageSyncerService } from '../../core/service/PackageSyncerService';
 import { RegistryManagerService } from '../../core/service/RegistryManagerService';
 import { TaskState } from '../../common/enum/Task';
 import { SyncPackageTaskRule, SyncPackageTaskType } from '../typebox';
-import { SyncMode } from '../../common/constants';
+import { PresetRegistryName, SyncMode } from '../../common/constants';
 
 @HTTPController()
 export class PackageSyncController extends AbstractController {
@@ -79,11 +79,12 @@ export class PackageSyncController extends AbstractController {
     const [ scope, name ] = getScopeAndName(params.fullname);
     const packageEntity = await this.packageRepository.findPackage(scope, name);
     const registry = await this.registryManagerService.findByRegistryName(data?.registryName);
+    const selfRegistry = await this.registryManagerService.ensureSelfRegistry();
 
     if (!registry && data.registryName) {
       throw new ForbiddenError(`Can\'t find target registry "${data.registryName}"`);
     }
-    if (packageEntity?.isPrivate && !registry) {
+    if (registry?.name === PresetRegistryName.self || selfRegistry.registryId === packageEntity?.registryId) {
       throw new ForbiddenError(`Can\'t sync private package "${params.fullname}"`);
     }
     if (params.syncDownloadData && !this.packageSyncerService.allowSyncDownloadData) {

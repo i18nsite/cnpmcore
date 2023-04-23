@@ -65,15 +65,6 @@ describe('test/port/controller/PackageBlockController/unblockPackage.test.ts', (
       assert(res.body.data.length === 0);
     });
 
-    it('should 403 block private package', async () => {
-      const { pkg } = await TestUtil.createPackage({ isPrivate: true });
-      const res = await app.httpRequest()
-        .delete(`/-/package/${pkg.name}/blocks`)
-        .set('authorization', adminUser.authorization);
-      assert(res.status === 403);
-      assert(res.body.error === '[FORBIDDEN] Can\'t unblock private package "@cnpm/testmodule"');
-    });
-
     it('should 403 when user is not admin', async () => {
       const user = await TestUtil.createUser();
       const { pkg } = await TestUtil.createPackage({ isPrivate: true });

@@ -224,7 +224,7 @@ export class TestUtil {
     if (options?.isPrivate === false) {
       const [ scope, name ] = getScopeAndName(pkg.name);
       const { Package: PackageModel } = require('../app/repository/model/Package');
-      await PackageModel.update({ scope, name }, { isPrivate: false, registryId: options?.registryId });
+      await PackageModel.update({ scope, name }, { registryId: options?.registryId });
     }
     return { user, pkg };
   }

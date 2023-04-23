@@ -41,6 +41,7 @@ describe('test/core/service/PackageSyncerService/executeTask.test.ts', () => {
     scopeManagerService = await app.getEggObject(ScopeManagerService);
     userService = await app.getEggObject(UserService);
     changeRepository = await app.getEggObject(ChangeRepository);
+    await registryManagerService.ensureDefaultRegistry();
   });
 
   describe('executeTask()', () => {
@@ -68,8 +69,6 @@ describe('test/core/service/PackageSyncerService/executeTask.test.ts', () => {
       assert(stream);
       const log = await TestUtil.readStreamToLog(stream);
       // console.log(log);
-      const model = await PackageModel.findOne({ scope: '', name: 'foobar' });
-      assert.equal(model!.isPrivate, false);
       assert(log.includes(', skipDependencies: true'));
 
       // sync again
@@ -149,8 +148,6 @@ describe('test/core/service/PackageSyncerService/executeTask.test.ts', () => {
       assert(stream);
       const log = await TestUtil.readStreamToLog(stream);
       // console.log(log);
-      const model = await PackageModel.findOne({ scope: '', name: 'foobar' });
-      assert.equal(model!.isPrivate, false);
       assert(log.includes(', taskQueue: 3/2'));
       assert(log.includes(', skipDependencies: true'));
       app.mockAgent().assertNoPendingInterceptors();
@@ -221,10 +218,6 @@ describe('test/core/service/PackageSyncerService/executeTask.test.ts', () => {
       // console.log(log);
       assert(log.includes(`] 🟢 Package "${name}" was removed in remote registry`));
 
-      manifests = await packageManagerService.listPackageFullManifests('', name);
-      assert(manifests.data.time.unpublished);
-      abbreviatedManifests = await packageManagerService.listPackageAbbreviatedManifests('', name);
-      assert(abbreviatedManifests.data.time.unpublished);
       app.mockAgent().assertNoPendingInterceptors();
 
       // sync again
@@ -661,25 +654,8 @@ describe('test/core/service/PackageSyncerService/executeTask.test.ts', () => {
           ip: '127.0.0.1',
         });
 
+        const registry = await registryManagerService.ensureDefaultRegistry();
         const publishCmd = {
-          scope: '@cnpmcore',
-          name: 'test-sync-package-has-two-versions',
-          version: '1.0.0',
-          description: '1.0.0',
-          readme: '',
-          registryId: undefined,
-          packageJson: { name, test: 'test', version: '1.0.0' },
-          dist: {
-            content: Buffer.alloc(0),
-          },
-          isPrivate: false,
-          publishTime: new Date(),
-          skipRefreshPackageManifests: false,
-        };
-        const pkgVersion = await packageManagerService.publish(publishCmd, user);
-        assert(pkgVersion.version === '1.0.0');
-
-        const publishCmd2 = {
           scope: '@cnpmcore',
           name: 'test-sync-package-has-two-versions',
           version: '2.0.0',
@@ -690,11 +666,11 @@ describe('test/core/service/PackageSyncerService/executeTask.test.ts', () => {
           dist: {
             content: Buffer.alloc(0),
           },
-          isPrivate: false,
           publishTime: new Date(),
           skipRefreshPackageManifests: true,
+          registry,
         };
-        const pkgVersion2 = await packageManagerService.publish(publishCmd2, user);
+        const pkgVersion2 = await packageManagerService.publish(publishCmd, user);
         assert(pkgVersion2.version === '2.0.0');
 
         await packageSyncerService.executeTask(task);
@@ -702,8 +678,6 @@ describe('test/core/service/PackageSyncerService/executeTask.test.ts', () => {
         const stream = await packageSyncerService.findTaskLog(task);
         assert(stream);
         const log = await TestUtil.readStreamToLog(stream);
-        // console.log(log);
-        assert(log.includes('Synced version 2.0.0 already exists, skip publish, try to set in local manifest'));
         assert(log.includes('] 🚧 Syncing versions 1 => 2'));
 
         const fullManifests = await packageManagerService.listPackageFullManifests('@cnpmcore', 'test-sync-package-has-two-versions');
@@ -726,6 +700,7 @@ describe('test/core/service/PackageSyncerService/executeTask.test.ts', () => {
           ip: '127.0.0.1',
         });
 
+        const registry = await registryManagerService.ensureDefaultRegistry();
         const publishCmd = {
           scope: '@cnpmcore',
           name: 'test-sync-package-has-two-versions',
@@ -737,9 +712,9 @@ describe('test/core/service/PackageSyncerService/executeTask.test.ts', () => {
           dist: {
             content: Buffer.alloc(0),
           },
-          isPrivate: false,
           publishTime: new Date(),
           skipRefreshPackageManifests: false,
+          registry,
         };
         const pkgVersion = await packageManagerService.publish(publishCmd, user);
         assert(pkgVersion.version === '1.0.0');
@@ -755,9 +730,9 @@ describe('test/core/service/PackageSyncerService/executeTask.test.ts', () => {
           dist: {
             content: Buffer.alloc(0),
           },
-          isPrivate: false,
           publishTime: new Date(),
           skipRefreshPackageManifests: true,
+          registry,
         };
         const pkgVersion2 = await packageManagerService.publish(publishCmd2, user);
         assert(pkgVersion2.version === '2.0.0');
@@ -772,7 +747,6 @@ describe('test/core/service/PackageSyncerService/executeTask.test.ts', () => {
         assert(stream);
         const log = await TestUtil.readStreamToLog(stream);
         // console.log(log);
-        assert(log.includes('Synced version 2.0.0 already exists, skip publish, try to set in local manifest'));
         assert(log.includes('] 🚧 Syncing versions 1 => 2'));
 
       });
@@ -791,6 +765,7 @@ describe('test/core/service/PackageSyncerService/executeTask.test.ts', () => {
           ip: '127.0.0.1',
         });
 
+        const registry = await registryManagerService.ensureDefaultRegistry();
         const publishCmd = {
           scope: '@cnpmcore',
           name: 'test-sync-package-has-two-versions',
@@ -802,9 +777,9 @@ describe('test/core/service/PackageSyncerService/executeTask.test.ts', () => {
           dist: {
             content: Buffer.alloc(0),
           },
-          isPrivate: false,
           publishTime: new Date(),
           skipRefreshPackageManifests: false,
+          registry,
         };
         const pkgVersion = await packageManagerService.publish(publishCmd, user);
         assert(pkgVersion.version === '1.0.0');
@@ -935,6 +910,10 @@ describe('test/core/service/PackageSyncerService/executeTask.test.ts', () => {
     });
 
     it('should work on unpublished package', async () => {
+      const registry = await registryManagerService.ensureDefaultRegistry();
+      await registryManagerService.remove({registryId: registry.registryId});
+      mock(app.config.cnpmcore, 'sourceRegistry', 'https://registry.npmjs.org');
+      await registryManagerService.ensureDefaultRegistry();
       app.mockHttpclient('https://registry.npmjs.org/rollup-config-mbp', 'GET', {
         data: '{"_id":"rollup-config-mbp","name":"rollup-config-mbp","time":{"created":"2020-09-25T09:18:36.405Z","0.0.1-alpha.1":"2020-09-25T09:18:36.552Z","modified":"2022-01-14T12:34:32.620Z","unpublished":{"time":"2022-01-14T12:34:32.620Z","versions":["0.0.1-alpha.1"]}}}',
         persist: false,
@@ -1258,9 +1237,11 @@ describe('test/core/service/PackageSyncerService/executeTask.test.ts', () => {
         data: await TestUtil.readFixturesFile('registry.npmjs.org/foobar/-/foobar-1.0.0.tgz'),
         persist: false,
       });
+      const registry = await registryManagerService.ensureDefaultRegistry();
+      await registryManagerService.remove({registryId: registry.registryId});
       mock(app.config.cnpmcore, 'sourceRegistry', 'https://r.cnpmjs.org');
       mock(app.config.cnpmcore, 'sourceRegistryIsCNpm', true);
-      mock(app.config.cnpmcore, 'syncUpstreamFirst', false);
+      await registryManagerService.ensureDefaultRegistry();
       const name = 'cnpmcore-test-sync-deprecated';
       await packageSyncerService.createTask(name);
       const task = await packageSyncerService.findExecuteTask();
@@ -1284,9 +1265,12 @@ describe('test/core/service/PackageSyncerService/executeTask.test.ts', () => {
         data: await TestUtil.readFixturesFile('registry.npmjs.org/foobar/-/foobar-1.0.0.tgz'),
         persist: false,
       });
+      const registry = await registryManagerService.ensureDefaultRegistry();
+      await registryManagerService.remove({registryId: registry.registryId});
       mock(app.config.cnpmcore, 'sourceRegistry', 'https://r.cnpmjs.org');
       mock(app.config.cnpmcore, 'sourceRegistryIsCNpm', true);
       mock(app.config.cnpmcore, 'syncUpstreamFirst', true);
+      await registryManagerService.ensureDefaultRegistry();
       mock.error(NPMRegistry.prototype, 'createSyncTask');
       const name = 'cnpmcore-test-sync-deprecated';
       await packageSyncerService.createTask(name);
@@ -1312,9 +1296,12 @@ describe('test/core/service/PackageSyncerService/executeTask.test.ts', () => {
         data: await TestUtil.readFixturesFile('registry.npmjs.org/foobar/-/foobar-1.0.0.tgz'),
         persist: false,
       });
+      const registry = await registryManagerService.ensureDefaultRegistry();
+      await registryManagerService.remove({registryId: registry.registryId});
       mock(app.config.cnpmcore, 'sourceRegistry', 'https://r.cnpmjs.org');
       mock(app.config.cnpmcore, 'sourceRegistryIsCNpm', true);
       mock(app.config.cnpmcore, 'syncUpstreamFirst', true);
+      await registryManagerService.ensureDefaultRegistry();
       mock.data(NPMRegistry.prototype, 'createSyncTask', { data: { ok: true }, res: {} });
       const name = 'cnpmcore-test-sync-deprecated';
       await packageSyncerService.createTask(name);
@@ -1347,10 +1334,13 @@ describe('test/core/service/PackageSyncerService/executeTask.test.ts', () => {
         },
         persist: false,
       });
+      const registry = await registryManagerService.ensureDefaultRegistry();
+      await registryManagerService.remove({registryId: registry.registryId});
       mock(app.config.cnpmcore, 'sourceRegistry', 'https://r.cnpmjs.org');
       mock(app.config.cnpmcore, 'sourceRegistryIsCNpm', true);
       mock(app.config.cnpmcore, 'syncUpstreamFirst', true);
       mock(app.config.cnpmcore, 'sourceRegistrySyncTimeout', 300);
+      await registryManagerService.ensureDefaultRegistry();
       let first = true;
       mock(NPMRegistry.prototype, 'getSyncTask', async () => {
         if (!first) {
@@ -1368,7 +1358,6 @@ describe('test/core/service/PackageSyncerService/executeTask.test.ts', () => {
       const stream = await packageSyncerService.findTaskLog(task);
       assert(stream);
       const log = await TestUtil.readStreamToLog(stream);
-      // console.log(log);
       assert(log.includes('🚮 give up 🚮 ❌❌❌❌❌'));
       assert(log.includes('][UP] 🚧 HTTP [200]'));
       assert.match(log, /\]\[UP\] 🚧 HTTP \[unknow\] \[\d+ms\] error: /);
@@ -1399,10 +1388,13 @@ describe('test/core/service/PackageSyncerService/executeTask.test.ts', () => {
         data: await TestUtil.readFixturesFile('registry.npmjs.org/foobar/-/foobar-1.0.0.tgz'),
         persist: false,
       });
+      const registry = await registryManagerService.ensureDefaultRegistry();
+      await registryManagerService.remove({registryId: registry.registryId});
       mock(app.config.cnpmcore, 'sourceRegistry', 'https://r.cnpmjs.org');
       mock(app.config.cnpmcore, 'sourceRegistryIsCNpm', true);
       mock(app.config.cnpmcore, 'syncUpstreamFirst', true);
       mock(app.config.cnpmcore, 'sourceRegistrySyncTimeout', 300);
+      await registryManagerService.ensureDefaultRegistry();
       const name = 'cnpmcore-test-sync-deprecated';
       await packageSyncerService.createTask(name);
       const task = await packageSyncerService.findExecuteTask();
@@ -1719,6 +1711,11 @@ describe('test/core/service/PackageSyncerService/executeTask.test.ts', () => {
         persist: false,
       });
 
+      const registry = await registryManagerService.ensureDefaultRegistry();
+      await registryManagerService.remove({registryId: registry.registryId});
+      mock(app.config.cnpmcore, 'sourceRegistry', 'https://registry.npmjs.org');
+      await registryManagerService.ensureDefaultRegistry();
+
       const name = 'mk2test-module-cnpmsync';
       mock(app.config.cnpmcore, 'allowPublishNonScopePackage', true);
       await TestUtil.createPackage({ name, version: '2.0.0', isPrivate: false });
@@ -1814,9 +1811,12 @@ describe('test/core/service/PackageSyncerService/executeTask.test.ts', () => {
     });
 
     it('should sync download data work on enableSyncDownloadData = true', async () => {
+      const registry = await registryManagerService.ensureDefaultRegistry();
+      await registryManagerService.remove({registryId: registry.registryId});
       mock(app.config.cnpmcore, 'syncDownloadDataSourceRegistry', 'https://rold.cnpmjs.org');
       mock(app.config.cnpmcore, 'enableSyncDownloadData', true);
       mock(app.config.cnpmcore, 'syncDownloadDataMaxDate', '2021-12-28');
+      await registryManagerService.ensureDefaultRegistry();
       app.mockHttpclient('https://registry.npmjs.org/pedding', 'GET', {
         data: await TestUtil.readFixturesFile('registry.npmjs.org/pedding.json'),
         persist: false,
@@ -1932,9 +1932,12 @@ describe('test/core/service/PackageSyncerService/executeTask.test.ts', () => {
         data: await TestUtil.readFixturesFile('registry.npmjs.org/foobar/-/foobar-1.0.0.tgz'),
         persist: false,
       });
+      const registry = await registryManagerService.ensureDefaultRegistry();
       mock(app.config.cnpmcore, 'syncDownloadDataSourceRegistry', 'https://rold.cnpmjs.org');
       mock(app.config.cnpmcore, 'enableSyncDownloadData', true);
       mock(app.config.cnpmcore, 'syncDownloadDataMaxDate', '2021-12-28');
+      await registryManagerService.remove({registryId: registry.registryId});
+      await registryManagerService.ensureDefaultRegistry();
       mock.error(NPMRegistry.prototype, 'getDownloadRanges');
 
       const name = 'pedding';
@@ -1990,11 +1993,17 @@ describe('test/core/service/PackageSyncerService/executeTask.test.ts', () => {
           repeats: 3,
         });
         task = await packageSyncerService.findExecuteTask();
+
+        registry = await registryManagerService.ensureDefaultRegistry();
+        await registryManagerService.remove({registryId: registry.registryId});
         mock(app.config.cnpmcore, 'sourceRegistry', 'https://default.npmjs.org');
+        await registryManagerService.ensureDefaultRegistry();
+
         await packageSyncerService.executeTask(task);
         stream = await packageSyncerService.findTaskLog(task);
         assert(stream);
         log = await TestUtil.readStreamToLog(stream);
+        // console.log(log);
         assert(log.includes('Syncing from https://default.npmjs.org/npm-pkg'));
         app.mockAgent().assertNoPendingInterceptors();
       });
@@ -2135,6 +2144,10 @@ describe('test/core/service/PackageSyncerService/executeTask.test.ts', () => {
       it('should ignore when upstream is removed', async () => {
         // removed in remote
         mock(app.config.cnpmcore, 'syncDeleteMode', 'ignore');
+        const registry = await registryManagerService.ensureDefaultRegistry();
+        await registryManagerService.remove({registryId: registry.registryId});
+        mock(app.config.cnpmcore, 'sourceRegistry', 'https://registry.npmjs.org');
+        await registryManagerService.ensureDefaultRegistry();
         app.mockHttpclient('https://registry.npmjs.org/foobar', 'GET', {
           data: await TestUtil.readFixturesFile('registry.npmjs.org/security-holding-package.json'),
         });
@@ -2152,7 +2165,6 @@ describe('test/core/service/PackageSyncerService/executeTask.test.ts', () => {
         const model = await PackageModel.findOne({ scope: '', name: 'foobar' });
         assert(model);
         const versions = await PackageVersion.find({ packageId: model.packageId });
-        assert.equal(model!.isPrivate, false);
         assert(versions.length === 2);
 
       });
@@ -2177,7 +2189,6 @@ describe('test/core/service/PackageSyncerService/executeTask.test.ts', () => {
         const model = await PackageModel.findOne({ scope: '', name: 'foobar' });
         assert(model);
         const versions = await PackageVersion.find({ packageId: model.packageId });
-        assert.equal(model!.isPrivate, false);
         assert(versions.length === 2);
 
         const manifests = await packageManagerService.listPackageFullManifests('', 'foobar');

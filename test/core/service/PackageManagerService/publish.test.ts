@@ -4,17 +4,22 @@ import { TestUtil } from 'test/TestUtil';
 import { PackageManagerService } from 'app/core/service/PackageManagerService';
 import { UserService } from 'app/core/service/UserService';
 import { PackageRepository } from 'app/repository/PackageRepository';
+import { Registry } from 'app/core/entity/Registry';
+import { RegistryManagerService } from 'app/core/service/RegistryManagerService';
 
 describe('test/core/service/PackageManagerService/publish.test.ts', () => {
   let packageManagerService: PackageManagerService;
   let userService: UserService;
   let packageRepository: PackageRepository;
+  let registryManagerService: RegistryManagerService;
+  let registry: Registry;
   let publisher;
 
   beforeEach(async () => {
     userService = await app.getEggObject(UserService);
     packageManagerService = await app.getEggObject(PackageManagerService);
     packageRepository = await app.getEggObject(PackageRepository);
+    registryManagerService = await app.getEggObject(RegistryManagerService);
 
     const { user } = await userService.create({
       name: 'test-user',
@@ -23,6 +28,9 @@ describe('test/core/service/PackageManagerService/publish.test.ts', () => {
       ip: '127.0.0.1',
     });
     publisher = user;
+
+    registry = await registryManagerService.ensureSelfRegistry();
+
   });
 
   afterEach(async () => {
@@ -44,7 +52,7 @@ describe('test/core/service/PackageManagerService/publish.test.ts', () => {
         packageJson: {},
         readme: '',
         version: '1.0.0',
-        isPrivate: true,
+        registry,
       }, publisher);
       let pkgVersion = await packageRepository.findPackageVersion(packageId, '1.0.0');
       assert(pkgVersion);
@@ -61,7 +69,7 @@ describe('test/core/service/PackageManagerService/publish.test.ts', () => {
         packageJson: { name: 'foo', test: 'test', version: '1.0.0' },
         readme: '',
         version: '1.0.1',
-        isPrivate: true,
+        registry,
       }, publisher);
       pkgVersion = await packageRepository.findPackageVersion(packageId, '1.0.1');
       assert(pkgVersion);
@@ -84,7 +92,7 @@ describe('test/core/service/PackageManagerService/publish.test.ts', () => {
         packageJson: {},
         readme: '',
         version: '1.0.0',
-        isPrivate: true,
+        registry,
       }, publisher);
       const pkgVersion = await packageRepository.findPackageVersion(packageId, '1.0.0');
       assert(pkgVersion);
@@ -105,7 +113,7 @@ describe('test/core/service/PackageManagerService/publish.test.ts', () => {
         packageJson: { name: 'pedding', test: 'test', version: '1.1.0' },
         readme: '',
         version: '1.1.0',
-        isPrivate: false,
+        registry,
       }, publisher);
       const pkgVersion = await packageRepository.findPackageVersion(packageId, '1.1.0');
       assert(pkgVersion);

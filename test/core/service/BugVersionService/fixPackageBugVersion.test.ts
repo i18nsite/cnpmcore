@@ -75,7 +75,6 @@ describe('test/core/service/BugVersionService/fixPackageBugVersion.test.ts', () 
         scope: '',
         name: 'colors',
         packageId: '0',
-        isPrivate: false,
         description: '',
       });
     });

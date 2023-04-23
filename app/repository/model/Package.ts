@@ -33,10 +33,6 @@ export class Package extends Bone {
   @Attribute(DataTypes.STRING(214))
   name: string;
 
-  // cnpm private package or not, `false` meaning is the npm public registry package
-  @Attribute(DataTypes.BOOLEAN)
-  isPrivate: boolean;
-
   @Attribute(DataTypes.STRING(10240))
   description: string;
 

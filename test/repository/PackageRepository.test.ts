@@ -3,10 +3,12 @@ import { app } from 'egg-mock/bootstrap';
 import { PackageRepository } from 'app/repository/PackageRepository';
 import { PackageManagerService } from 'app/core/service/PackageManagerService';
 import { UserService } from 'app/core/service/UserService';
+import { RegistryManagerService } from 'app/core/service/RegistryManagerService';
 
 describe('test/repository/PackageRepository.test.ts', () => {
   let packageRepository: PackageRepository;
   let packageManagerService: PackageManagerService;
+  let registryManagerService: RegistryManagerService;
   let userService: UserService;
 
   describe('queryTotal', () => {
@@ -14,6 +16,7 @@ describe('test/repository/PackageRepository.test.ts', () => {
       packageRepository = await app.getEggObject(PackageRepository);
       packageManagerService = await app.getEggObject(PackageManagerService);
       userService = await app.getEggObject(UserService);
+      registryManagerService = await app.getEggObject(RegistryManagerService);
 
     });
     it('should work', async () => {
@@ -35,7 +38,7 @@ describe('test/repository/PackageRepository.test.ts', () => {
         packageJson: {},
         readme: '',
         version: '1.0.0',
-        isPrivate: true,
+        registry: await registryManagerService.ensureSelfRegistry(),
       }, user);
       const res = await packageRepository.queryTotal();
       // information_schema 只能返回大概值，仅验证增加

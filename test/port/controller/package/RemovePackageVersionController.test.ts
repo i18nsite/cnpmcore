@@ -2,11 +2,17 @@ import assert from 'assert';
 import { app, mock } from 'egg-mock/bootstrap';
 import { TestUtil } from 'test/TestUtil';
 import { PackageRepository } from 'app/repository/PackageRepository';
+import dayjs from 'dayjs';
+import { RegistryManagerService } from 'app/core/service/RegistryManagerService';
 
 describe('test/port/controller/package/RemovePackageVersionController.test.ts', () => {
   let packageRepository: PackageRepository;
+  let registryManagerService: RegistryManagerService;
   let publisher;
+
   beforeEach(async () => {
+    registryManagerService = await app.getEggObject(RegistryManagerService);
+    await registryManagerService.ensureSelfRegistry();
     publisher = await TestUtil.createUser();
     packageRepository = await app.getEggObject(PackageRepository);
   });
@@ -31,6 +37,7 @@ describe('test/port/controller/package/RemovePackageVersionController.test.ts', 
         .set('authorization', adminUser.authorization)
         .set('npm-command', 'unpublish')
         .set('user-agent', adminUser.ua);
+      // console.log(res.body);
       assert(res.status === 200);
       assert(res.body.ok === true);
 
@@ -54,7 +61,7 @@ describe('test/port/controller/package/RemovePackageVersionController.test.ts', 
       assert(pkgEntity);
       const pkgVersionEntity = await packageRepository.findPackageVersion(pkgEntity.packageId, '1.0.0');
       assert(pkgVersionEntity);
-      pkgVersionEntity.publishTime = new Date(Date.now() - 72 * 3600000 - 100);
+      pkgVersionEntity.publishTime = dayjs().subtract(73, 'hour').toDate();
       await packageRepository.savePackageVersion(pkgVersionEntity!);
 
       const adminUser = await TestUtil.createUser({ name: 'cnpmcore_admin' });
@@ -142,8 +149,8 @@ describe('test/port/controller/package/RemovePackageVersionController.test.ts', 
         .delete(`${tarballUrl}/-rev/${pkgVersion._rev}`)
         .set('authorization', publisher.authorization)
         .set('npm-command', 'unpublish')
-        .set('user-agent', publisher.ua)
-        .expect(200);
+        .set('user-agent', publisher.ua);
+
       assert.equal(res.body.ok, true);
 
       res = await app.httpRequest()

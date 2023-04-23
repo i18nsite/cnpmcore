@@ -35,9 +35,6 @@ export class PackageBlockController extends AbstractController {
     const params = { fullname, reason: data.reason };
     ctx.tValidate(BlockPackageRule, params);
     const packageEntity = await this.getPackageEntityByFullname(params.fullname);
-    if (packageEntity.isPrivate) {
-      throw new ForbiddenError(`Can\'t block private package "${params.fullname}"`);
-    }
 
     const authorized = await this.userRoleManager.getAuthorizedUserAndToken(ctx);
     const block = await this.packageManagerService.blockPackage(packageEntity,
@@ -63,9 +60,6 @@ export class PackageBlockController extends AbstractController {
       throw new ForbiddenError('Not allow to unblock package');
     }
     const packageEntity = await this.getPackageEntityByFullname(fullname);
-    if (packageEntity.isPrivate) {
-      throw new ForbiddenError(`Can\'t unblock private package "${fullname}"`);
-    }
 
     await this.packageManagerService.unblockPackage(packageEntity);
     ctx.logger.info('[PackageBlockController.unblockPackage:success] fullname: %s, packageId: %s',

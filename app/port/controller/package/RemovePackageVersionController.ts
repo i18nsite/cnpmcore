@@ -16,11 +16,17 @@ import { FULLNAME_REG_STRING } from '../../../common/PackageUtil';
 import { PackageManagerService } from '../../../core/service/PackageManagerService';
 import { Package } from '../../../core/entity/Package';
 import { PackageVersion } from '../../../core/entity/PackageVersion';
+import dayjs from 'dayjs';
+import { RegistryManagerService } from 'app/core/service/RegistryManagerService';
+import { PresetRegistryName } from 'app/common/constants';
 
 @HTTPController()
 export class RemovePackageVersionController extends AbstractController {
   @Inject()
   private packageManagerService: PackageManagerService;
+
+  @Inject()
+  private registryManagerService: RegistryManagerService;
 
   // https://github.com/npm/cli/blob/latest/lib/commands/unpublish.js#L101
   // https://github.com/npm/libnpmpublish/blob/main/unpublish.js#L84
@@ -87,8 +93,11 @@ export class RemovePackageVersionController extends AbstractController {
   async #removePackageVersion(pkg: Package, packageVersion: PackageVersion) {
     // https://docs.npmjs.com/policies/unpublish
     // can unpublish anytime within the first 72 hours after publishing
-    if (pkg.isPrivate && Date.now() - packageVersion.publishTime.getTime() >= 3600000 * 72) {
-      throw new ForbiddenError(`${pkg.fullname}@${packageVersion.version} unpublish is not allowed after 72 hours of released`);
+    if (pkg.registryId && dayjs(packageVersion.publishTime).add(72, 'hours').isBefore(dayjs())) {
+      const registry = await this.registryManagerService.findByRegistryId(pkg.registryId);
+      if (registry?.name === PresetRegistryName.self) {
+        throw new ForbiddenError(`${pkg.fullname}@${packageVersion.version} unpublish is not allowed after 72 hours of released`);
+      }
     }
     this.logger.info('[PackageController:removeVersion] %s@%s, packageVersionId: %s',
       pkg.fullname, packageVersion.version, packageVersion.packageVersionId);

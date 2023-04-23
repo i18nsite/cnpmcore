@@ -37,6 +37,7 @@ import {
 } from '../event';
 import { BugVersionService } from './BugVersionService';
 import { BugVersion } from '../entity/BugVersion';
+import { Registry } from '../entity/Registry';
 
 export interface PublishPackageCmd {
   // maintainer: Maintainer;
@@ -46,7 +47,7 @@ export interface PublishPackageCmd {
   version: string;
   description: string;
   packageJson: any;
-  registryId?: string;
+  registry: Registry;
   readme: string;
   // require content or localFile field
   dist: RequireAtLeastOne<{
@@ -56,7 +57,6 @@ export interface PublishPackageCmd {
     localFile?: string;
   }, 'content' | 'localFile'>;
   tag?: string;
-  isPrivate: boolean;
   // only use on sync package
   publishTime?: Date;
   // only use on sync package for speed up https://github.com/cnpm/cnpmcore/issues/28
@@ -95,9 +95,8 @@ export class PackageManagerService extends AbstractService {
       pkg = Package.create({
         scope: cmd.scope,
         name: cmd.name,
-        isPrivate: cmd.isPrivate,
         description: cmd.description,
-        registryId: cmd.registryId,
+        registryId: cmd.registry.registryId,
       });
     } else {
       // update description
@@ -108,9 +107,7 @@ export class PackageManagerService extends AbstractService {
 
       /* c8 ignore next 3 */
       // package can be migrated into another registry
-      if (cmd.registryId) {
-        pkg.registryId = cmd.registryId;
-      }
+      pkg.registryId = cmd.registry.registryId;
     }
 
     // 防止 description 长度超过 db 限制
