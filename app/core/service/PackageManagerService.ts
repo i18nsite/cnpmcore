@@ -533,8 +533,15 @@ export class PackageManagerService extends AbstractService {
   }
 
   public async removePackageVersion(pkg: Package, pkgVersion: PackageVersion, skipRefreshPackageManifests = false) {
+    const currentVersions = await this.packageRepository.listPackageVersionNames(pkg.packageId);
+    // should unpublish pkg when only one version
+    if (currentVersions.length === 1 && currentVersions[0] === pkgVersion.version) {
+      await this.unpublishPackage(pkg);
+      return;
+    }
+
+    // remove single version & update distTags
     await this._removePackageVersionAndDist(pkgVersion);
-    // all versions removed
     const versions = await this.packageRepository.listPackageVersionNames(pkg.packageId);
     if (versions.length > 0) {
       let updateTag: string | undefined;
