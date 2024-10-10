@@ -36,7 +36,7 @@ class StoreManifestEvent {
 }
 
 @Event(PACKAGE_VERSION_ADDED)
-export class PackageVersionAddedStoreManifestEvent extends StoreManifestEvent {
+export class PackageVersionAdded extends StoreManifestEvent {
   async handle(fullname: string, version: string) {
     await this.savePackageVersionManifest(fullname, version);
   }

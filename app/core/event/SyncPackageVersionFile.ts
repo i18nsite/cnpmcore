@@ -51,14 +51,14 @@ class SyncPackageVersionFileEvent {
 }
 
 @Event(PACKAGE_VERSION_ADDED)
-export class PackageVersionAddedSyncPackageVersionFileEvent extends SyncPackageVersionFileEvent {
+export class PackageVersionAdded extends SyncPackageVersionFileEvent {
   async handle(fullname: string, version: string) {
     await this.syncPackageVersionFile(fullname, version);
   }
 }
 
 @Event(PACKAGE_TAG_ADDED)
-export class PackageTagAddedSyncPackageVersionFileEvent extends SyncPackageVersionFileEvent {
+export class PackageTagAdded extends SyncPackageVersionFileEvent {
   async handle(fullname: string, tag: string) {
     if (tag !== 'latest') return;
     await this.syncPackageReadmeToLatestVersion(fullname);
@@ -66,7 +66,7 @@ export class PackageTagAddedSyncPackageVersionFileEvent extends SyncPackageVersi
 }
 
 @Event(PACKAGE_TAG_CHANGED)
-export class PackageTagChangedSyncPackageVersionFileEvent extends SyncPackageVersionFileEvent {
+export class PackageTagChanged extends SyncPackageVersionFileEvent {
   async handle(fullname: string, tag: string) {
     if (tag !== 'latest') return;
     await this.syncPackageReadmeToLatestVersion(fullname);
